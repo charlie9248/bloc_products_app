@@ -2,51 +2,73 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:products_app/feature/cart/presentation/bloc/buttonNavigation/bottom_nav_bloc.dart';
+import 'package:products_app/feature/cart/presentation/bloc/buttonNavigation/bottom_nav_state.dart';
 import 'package:products_app/feature/cart/presentation/bloc/cart/cart_bloc.dart';
 import 'package:products_app/feature/cart/presentation/views/cart_page.dart';
 import 'package:products_app/feature/products/domain/entities/product.dart';
 import 'package:products_app/feature/products/domain/usecases/get_product_usecase.dart';
 import 'package:products_app/feature/products/presentation/bloc/products_bloc.dart';
-import 'package:products_app/shared/views/buttomNavifation_bar.dart';
+import 'package:products_app/shared/views/bottomNavigation_bar.dart';
 
 import 'di/injector.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await setUp();
   provideDataSources();
   provideRepositories();
   provideUseCases();
   provideBlocs();
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+
+  List<Widget> bottomNavScreen = <Widget>[const HomePage(), const CartPage()];
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => ProductsBloc(injector.get<GetProductUseCase>())
-            ..add(const GetProducts()),
-        ),
-        BlocProvider(
-          create: (context) => injector<CartBloc>(),
-        ),
-
-        BlocProvider(
-          create: (context) => injector<BottomNavBloc>(),
-        )
-        // Add other providers here if needed
-      ],
-      child: const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: HomePage(),
-      ),
-    );
+        providers: [
+          BlocProvider(
+            create: (context) => ProductsBloc(injector.get<GetProductUseCase>())
+              ..add(const GetProducts()),
+          ),
+          BlocProvider(
+            create: (context) => injector<CartBloc>(),
+          ),
+          BlocProvider(
+            create: (context) => injector<BottomNavBloc>(),
+          )
+          // Add other providers here if needed
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: BlocBuilder<BottomNavBloc, BottomNavState>(
+            builder: (context, state) {
+              return Scaffold(
+                  appBar: AppBar(
+                    centerTitle: true,
+                    title: const Text('Products'),
+                    actions: [
+                      IconButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const CartPage(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_shopping_cart_outlined))
+                    ],
+                  ),
+                  body: bottomNavScreen.elementAt(state.tabIndex),
+                bottomNavigationBar: const BottomNavBar(),
+              );
+            },
+          ),
+        ));
   }
 }
 
@@ -55,24 +77,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text('Products'),
-        actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CartPage(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add_shopping_cart_outlined))
-        ],
-      ),
-      body: BlocBuilder<ProductsBloc, ProductsState>(
+    return BlocBuilder<ProductsBloc, ProductsState>(
         builder: (context, state) {
           if (state is ProductsLoading) {
             return const Center(
@@ -101,8 +106,6 @@ class HomePage extends StatelessWidget {
           }
           return Container();
         },
-      ),
-      bottomNavigationBar: const BottomNavBar(),
     );
   }
 }
@@ -130,11 +133,11 @@ class ProductPreView extends StatelessWidget {
                     flex: 1,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
-                        maxHeight: 120.0, // Set the maximum height here
+                        maxHeight: 120.0,
                       ),
                       child: CachedNetworkImage(
                         fit: BoxFit
-                            .fill, // You can use BoxFit.cover or BoxFit.contain as well
+                            .fill,
                         imageUrl: product.images[0],
                         placeholder: (context, url) =>
                             const CircularProgressIndicator(),
