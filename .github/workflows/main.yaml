@@ -85,6 +85,10 @@ jobs:
         run: |
           new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
           echo "VERSION=$new_version" >> $GITHUB_ENV
+          if git rev-parse -q --verify "refs/tags/v${{ env.VERSION }}"; then
+          echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+          echo "TAG_EXISTS=false" >> $GITHUB_ENV
 
       - name: Create Release
         uses: ncipollo/release-action@v1.14.0
